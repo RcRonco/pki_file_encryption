@@ -39,7 +39,9 @@ def encrypt_file(input_path, output_path, pub_key_path='public.pem'):
     with open(output_path, 'wb') as out_fb:
         # Write out the encrypted secret key, preceded by a length indication
         out_fb.write((str(len(encrypted_secret_key[0])) + '\n').encode())
+        out_fb.write((str(padding_len) + '\n').encode())
         out_fb.write(encrypted_secret_key[0])
+        out_fb.flush()
 
         # Write out the initialization vector and then the encrypted data
         out_fb.write(iv)
@@ -63,6 +65,7 @@ def decrypt_file(input_path, output_path, priv_key_path='private.pem',  pwd=None
     # Read the encrypted file
     with open(input_path, 'rb') as in_fd:
         key_size = int(in_fd.readline())
+        padding_len = int(in_fd.readline())
         encrypted_key = in_fd.read(key_size)
         iv = in_fd.read(16)
         # decrypt symmetric encryption key with the private key
@@ -74,7 +77,9 @@ def decrypt_file(input_path, output_path, priv_key_path='private.pem',  pwd=None
     data = aes.decrypt(enc_data)
 
     # remove padding
-    data = data.decode('utf8').replace('\x00', '').encode()
+    data = data[:-padding_len]
+    #data = data
+    #data = data.decode('utf8').replace('\x00', '').encode()
 
     with open(output_path, 'wb') as out_fd:
         out_fd.write(data)
